@@ -93,3 +93,10 @@ sys_halt(void){
   return 0;
 }
 
+#ifdef CS333_P1
+//TODO
+int
+sys_date(void){
+  return 0;
+}
+#endif
