@@ -1,6 +1,7 @@
 dist
 dist-test
 xv6-pdx.tar.gz
+*.swp
 
 
 # Created by https://www.gitignore.io/api/c
