@@ -109,16 +109,23 @@ sys_date(void){
 #ifdef CS333_P2
 int
 sys_getuid(void){
-  return 0;
+  return proc->uid;
 }
 
 int
 sys_getgid(void){
-  return 0;
+  return proc->gid;
 }
 
 int
 sys_setuid(void){
+  uint arg;
+  if(argint(0, (int*)&arg) < 0);
+    return -1;
+  if(arg < 0 || arg > 32767)
+    return -1;
+
+  proc->uid = arg;
   return 0;
 }
 
