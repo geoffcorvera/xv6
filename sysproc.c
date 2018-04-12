@@ -118,6 +118,11 @@ sys_getgid(void){
 }
 
 int
+sys_getppid(void){
+  return proc->parent->pid;
+}
+
+int
 sys_setuid(void){
   uint arg;
   if(argint(0, (int*)&arg) < 0 || arg < 0 || arg > 32767)
