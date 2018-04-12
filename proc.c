@@ -20,12 +20,15 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
-
-#ifdef CS333_P3P4
+#if defined(CS333_P3P4)
 static void initProcessLists(void);
 static void initFreeList(void);
 static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
+#elif defined(CS333_P2)
+static void procdumpP2(struct proc *p, char *state);
+#elif defined(CS333_P1)
+static void procdumpP1(struct proc *p, char *state);
 #endif
 
 void
@@ -528,13 +531,14 @@ procdump(void)
     else
       state = "???";
 
-#ifdef CS333_P1
-    int elapsed = ticks - p->start_ticks;
-    cprintf("%d.%d\t%d\t%s\t%s\t",
-        elapsed/1000, elapsed%1000, p->pid, state, p->name);
+#if defined(CS333_P2)
+    procdumpP2(p, state);
+#elif defined(CS333_P1)
+    procdumpP1(p, state);
 #else
     cprintf("%d %s %s", p->pid, state, p->name);
 #endif
+
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
       for(i=0; i<10 && pc[i] != 0; i++)
@@ -637,15 +641,17 @@ initFreeList(void) {
 #endif
 
 // Procdump() helper functions
+#if defined(CS333_P2)
 static void
-procdumpP2(struct proc p, (char*) state) {
+procdumpP2(struct proc *p, char *state) {
   cprintf("%d\t%d\t", p->uid, p->gid);
   procdumpP1(p, state);
 }
-
+#elif defined(CS333_P1)
 static void
-procdumpP1(struct proc p, (char*) state) {
+procdumpP1(struct proc *p, char *state) {
   int elapsed = ticks - p->start_ticks;
   cprintf("%d.%d\t%d\t%s\t%s\t",
       elapsed/1000, elapsed%1000, p->pid, state, p->name);
 }
+#endif
