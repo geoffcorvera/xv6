@@ -120,9 +120,7 @@ sys_getgid(void){
 int
 sys_setuid(void){
   uint arg;
-  if(argint(0, (int*)&arg) < 0);
-    return -1;
-  if(arg < 0 || arg > 32767)
+  if(argint(0, (int*)&arg) < 0 || arg < 0 || arg > 32767)
     return -1;
 
   proc->uid = arg;
@@ -131,6 +129,11 @@ sys_setuid(void){
 
 int
 sys_setgid(void){
+  uint arg;
+  if(argint(0, (int*)&arg) < 0 || arg < 0 || arg > 32767)
+    return -1;
+
+  proc->gid = arg;
   return 0;
 }
 #endif
