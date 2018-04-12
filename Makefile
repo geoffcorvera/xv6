@@ -18,7 +18,7 @@ endif
 ifeq ($(CS333_PROJECT), 2)
 CS333_CFLAGS += -DCS333_P1 -DUSE_BUILTINS -DCS333_P2
 CS333_UPROGS += _date _time _ps
-CS333_TPROGS += 
+CS333_TPROGS += _testuidgid
 endif
 
 ifeq ($(CS333_PROJECT), $(filter $(CS333_PROJECT), 3 4))
