@@ -511,9 +511,15 @@ procdump(void)
   char *state;
   uint pc[10];
 
-#ifdef CS333_P1
-  cprintf("PID\tState\tName\tElapsed\tPCs\n");
+#if defined(CS333_P2)
+#define HEADER "\nUID\tGID\tElapsed\tPID\tState\tName\tPCs\n"
+#elif defined(CS333_P1)
+#define HEADER "\nElapsed\tPID\tState\tName\tPCs\n"
+#else
+#define HEADER ""
 #endif
+
+  cprintf(HEADER);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       continue;
@@ -521,10 +527,11 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
+
 #ifdef CS333_P1
     int elapsed = ticks - p->start_ticks;
-    cprintf("%d\t%s\t%s\t%d.%d\t",
-        p->pid, state, p->name, elapsed/1000, elapsed%1000);
+    cprintf("%d.%d\t%d\t%s\t%s\t",
+        elapsed/1000, elapsed%1000, p->pid, state, p->name);
 #else
     cprintf("%d %s %s", p->pid, state, p->name);
 #endif
@@ -628,3 +635,17 @@ initFreeList(void) {
   }
 }
 #endif
+
+// Procdump() helper functions
+static void
+procdumpP2(struct proc p, (char*) state) {
+  cprintf("%d\t%d\t", p->uid, p->gid);
+  procdumpP1(p, state);
+}
+
+static void
+procdumpP1(struct proc p, (char*) state) {
+  int elapsed = ticks - p->start_ticks;
+  cprintf("%d.%d\t%d\t%s\t%s\t",
+      elapsed/1000, elapsed%1000, p->pid, state, p->name);
+}
