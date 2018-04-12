@@ -644,8 +644,10 @@ initFreeList(void) {
 #if defined(CS333_P2)
 static void
 procdumpP2(struct proc *p, char *state) {
+  int elapsed = ticks - p->start_ticks;
   cprintf("%d\t%d\t", p->uid, p->gid);
-  procdumpP1(p, state);
+  cprintf("%d.%d\t%d\t%s\t%s\t", elapsed/1000,
+      elapsed%1000, p->pid, state, p->name);
 }
 #elif defined(CS333_P1)
 static void
