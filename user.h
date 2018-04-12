@@ -28,6 +28,15 @@ int halt(void);
 int date(struct rtcdate*);
 #endif
 
+#ifdef CS333_P2
+uint getuid(void);
+uint getgid(void);
+//uint getppid(void);
+
+int setuid(uint);
+int setgid(uint);
+#endif
+
 // ulib.c
 int stat(char*, struct stat*);
 char* strcpy(char*, char*);
