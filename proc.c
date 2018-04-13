@@ -115,8 +115,8 @@ userinit(void)
   p->cwd = namei("/");
 
 #ifdef CS333_P2
-  p->uid = UIDINIT;
-  p->gid = GIDINIT;
+  p->uid = UIDINIT;  // default uid
+  p->gid = GIDINIT;  // default gid
 #endif
 
   p->state = RUNNABLE;

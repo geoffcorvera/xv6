@@ -82,6 +82,11 @@ invalidTest(uint nval)
 }
 
 static int
+shellbuiltin(void){
+  return 0;
+}
+
+static int
 testuidgid(void)
 {
   uint nval, ppid;
