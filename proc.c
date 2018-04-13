@@ -114,6 +114,11 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+#ifdef CS333_P2
+  p->uid = UIDINIT;
+  p->gid = GIDINIT;
+#endif
+
   p->state = RUNNABLE;
 }
 
