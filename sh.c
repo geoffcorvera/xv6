@@ -14,6 +14,8 @@
 
 #define MAXARGS 10
 
+#define USE_BUILTINS_NOT_YET 1
+
 struct cmd {
   int type;
 };
