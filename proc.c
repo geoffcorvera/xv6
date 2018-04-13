@@ -161,6 +161,11 @@ fork(void)
   np->parent = proc;
   *np->tf = *proc->tf;
 
+#ifdef CS333_P2
+  np->uid = proc->uid;
+  np->gid = proc->gid;
+#endif
+
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 
