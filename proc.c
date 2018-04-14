@@ -1,3 +1,10 @@
+/* * * * * * * * * * * * * * * * * * * 
+ *
+ * Bits of procdump() were taken from Mark
+ * Morrissey's email.
+ *
+ * * * * * * * * * * * * * * * * * * */ 
+
 #include "types.h"
 #include "defs.h"
 #include "param.h"
