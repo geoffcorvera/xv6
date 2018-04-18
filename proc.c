@@ -380,6 +380,11 @@ sched(void)
   if(readeflags()&FL_IF)
     panic("sched interruptible");
   intena = cpu->intena;
+
+#ifdef CS333_P2
+  proc->cpu_ticks_total += ticks - proc->cpu_ticks_in;
+#endif
+
   swtch(&proc->context, cpu->scheduler);
   cpu->intena = intena;
 }
