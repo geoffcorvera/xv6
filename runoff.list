@@ -91,3 +91,4 @@ p5-test.h
 testsetuid.c
 testSched.c
 p2testsuite.c
+uproc.h
