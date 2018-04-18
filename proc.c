@@ -88,8 +88,12 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-#ifdef CS333_P1
+#if defined(CS333_P1)
   p->start_ticks = ticks;
+#elif defined(CS333_P2)
+  // initialize to zero
+  p->cpu_ticks_total = 0;
+  p->cpu_ticks_in = 0;
 #endif
 
   return p;
