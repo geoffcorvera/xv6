@@ -81,10 +81,12 @@ invalidTest(uint nval)
     printf(2, "FAILURE! The setgid system call indicates success\n");
 }
 
+/*
 static int
 shellbuiltin(void){
   return 0;
 }
+*/
 
 static int
 testuidgid(void)
