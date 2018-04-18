@@ -32,9 +32,9 @@ int date(struct rtcdate*);
 uint getuid(void);
 uint getgid(void);
 uint getppid(void);
-
 int setuid(uint);
 int setgid(uint);
+int getprocs(uint max, struct uproc* table);
 #endif
 
 // ulib.c
