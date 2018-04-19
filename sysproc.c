@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "uproc.h"
 
 int
 sys_fork(void)
@@ -144,6 +145,28 @@ sys_setgid(void){
 
 int
 sys_getprocs(void){
-  return 0;
+  uint max, numProcs;
+  struct uproc *ptable,
+               *p;
+
+  if(argint(0, (int*)&max) < 0)
+    return -1;
+  if(argptr(1, (void*)&ptable, sizeof(struct uproc)) < 0)
+    return -1;
+
+  for(p = ptable; p < &ptable[max]; p++) {
+    p->pid = 1;
+    p->uid = 1;
+    p->gid = 1;
+    p->ppid = 1;
+    p->elapsed_ticks = 1;
+    p->CPU_total_ticks = 1;
+    //p->state = s;
+    p->size = 1;
+    //p->name = n;
+  }
+
+  numProcs = 5;
+  return numProcs;
 }
 #endif
