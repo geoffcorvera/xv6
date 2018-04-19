@@ -18,10 +18,10 @@ main(void)
     return -1;
 
   printf(1,
-      "PID\tUID\tGID\tPPID\tElapsed Time\tCPU Time\tState\tSize\tName\n");
+      "PID\tUID\tGID\tPPID\tElapsed\tCPU Time   State\tSize\tName\n");
   for(int i = 0; i < numProcs; i++) {
     p = ptable[i]; 
-    printf(1, "%d\t%d\t%d\t%d\t%d\t%d\t%s\t%d\t%s\n",
+    printf(1, "%d\t%d\t%d\t%d\t%d\t%d\t   %s\t%d\t%s\n",
         p.pid, p.uid,
         p.gid, p.ppid,
         p.elapsed_ticks,

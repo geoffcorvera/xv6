@@ -146,15 +146,18 @@ sys_setgid(void){
 int
 sys_getprocs(void){
   uint max, numProcs;
-  struct uproc *ptable,
+  struct uproc *aProcs, // active processes
                *p;
 
   if(argint(0, (int*)&max) < 0)
     return -1;
-  if(argptr(1, (void*)&ptable, sizeof(struct uproc)) < 0)
+  if(argptr(1, (void*)&aProcs, sizeof(struct uproc)) < 0)
     return -1;
+  
+  // should this take (void*) arg?
+  //ptablecopy(&aProcs);
 
-  for(p = ptable; p < &ptable[max]; p++) {
+  for(p = aProcs; p < &aProcs[max]; p++) {
     p->pid = 1;
     p->uid = 1;
     p->gid = 1;
