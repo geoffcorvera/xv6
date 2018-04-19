@@ -34,6 +34,7 @@ static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
 #elif defined(CS333_P2)
 static void procdumpP2(struct proc *p, char *state);
+int ptablecopy(struct uproc* uprocs);
 #elif defined(CS333_P1)
 static void procdumpP1(struct proc *p, char *state);
 #endif
@@ -677,6 +678,12 @@ procdumpP2(struct proc *p, char *state) {
   cprintf("%d\t%d\t", p->uid, p->gid);
   cprintf("%d.%d\t%d\t%s\t%s\t", elapsed/1000,
       elapsed%1000, p->pid, state, p->name);
+}
+
+int
+ptablecopy(struct uproc *uprocs) {
+  cprintf("hi doing thangs\n");
+  return 0;
 }
 #elif defined(CS333_P1)
 static void
