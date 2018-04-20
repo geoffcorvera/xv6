@@ -122,7 +122,7 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 #ifdef CS333_P2
-int             ptablecopy(struct uproc *uprocs);
+int             ptablecopy(struct uproc *uprocs, int max);
 #endif
 
 // swtch.S

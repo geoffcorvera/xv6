@@ -145,31 +145,18 @@ sys_setgid(void){
 
 int
 sys_getprocs(void){
-  uint max, numProcs;
-  struct uproc *aProcs, // active processes
-               *p;
+  uint max, n;
+  struct uproc *aProcs; // active processes
 
-  if(argint(0, (int*)&max) < 0)
+  // check max not greater than number of procs
+  if(argint(0, (int*)&max) < 0 || max > NPROC)
     return -1;
   if(argptr(1, (void*)&aProcs, sizeof(struct uproc)) < 0)
     return -1;
   
-  // should this take (void*) arg?
-  //ptablecopy(&aProcs);
+  // TODO should this take (void*) arg?
+  n = ptablecopy(aProcs, max);
 
-  for(p = aProcs; p < &aProcs[max]; p++) {
-    p->pid = 1;
-    p->uid = 1;
-    p->gid = 1;
-    p->ppid = 1;
-    p->elapsed_ticks = 1;
-    p->CPU_total_ticks = 1;
-    //p->state = s;
-    p->size = 1;
-    //p->name = n;
-  }
-
-  numProcs = 5;
-  return numProcs;
+  return n;
 }
 #endif

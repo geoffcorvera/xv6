@@ -13,6 +13,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "uproc.h"
 
 struct {
   struct spinlock lock;
@@ -34,7 +35,7 @@ static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
 #elif defined(CS333_P2)
 static void procdumpP2(struct proc *p, char *state);
-int ptablecopy(struct uproc* uprocs);
+int ptablecopy(struct uproc* uprocs, int max);
 #elif defined(CS333_P1)
 static void procdumpP1(struct proc *p, char *state);
 #endif
@@ -681,9 +682,25 @@ procdumpP2(struct proc *p, char *state) {
 }
 
 int
-ptablecopy(struct uproc *uprocs) {
-  cprintf("hi doing thangs\n");
-  return 0;
+ptablecopy(struct uproc *uprocs, int max) {
+  struct proc *p;
+  int n = 0;      // number of processes copied
+
+  for(p = ptable.proc; p < & ptable.proc[max]; p++){
+    if(p->state == RUNNABLE || p->state == RUNNING || p->state == SLEEPING) {
+      uprocs[n].pid = p->pid;
+      uprocs[n].uid = p->uid;
+      uprocs[n].gid = p->gid;
+      uprocs[n].ppid = p->parent->pid;
+      uprocs[n].elapsed_ticks = p->cpu_ticks_total;
+      //uprocs[n].state = p->state;
+      uprocs[n].size = p->sz;
+      //uprocs[n].name = p->name;
+      ++n;
+    }
+  }
+  
+  return n;
 }
 #elif defined(CS333_P1)
 static void
