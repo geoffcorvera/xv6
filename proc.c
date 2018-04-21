@@ -130,6 +130,7 @@ userinit(void)
 #ifdef CS333_P2
   p->uid = UIDINIT;  // default uid
   p->gid = GIDINIT;  // default gid
+  p->parent = p;     // set itself as parent
 #endif
 
   p->state = RUNNABLE;
