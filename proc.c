@@ -703,8 +703,24 @@ ptablecopy(struct uproc *uprocs, int max) {
       uprocs[n].elapsed_ticks = ticks - p->start_ticks;
       uprocs[n].CPU_total_ticks = p->cpu_ticks_total;
       uprocs[n].size = p->sz;
-      //TODO: how to copy strings?
-      
+      strncpy(uprocs[n].name, p->name, STRMAX);
+      switch(p->state) {
+        case RUNNABLE:
+          strncpy(uprocs[n].state, "Runnable", STRMAX);
+          break;
+        
+        case RUNNING:
+          strncpy(uprocs[n].state, "Running", STRMAX);
+          break;
+
+        case SLEEPING:
+          strncpy(uprocs[n].state, "Sleeping", STRMAX);
+          break;
+        
+        default:
+          break;
+      }
+
       n++;
     }
   }
