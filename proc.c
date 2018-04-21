@@ -682,10 +682,17 @@ procdumpP2(struct proc *p, char *state) {
       elapsed%1000, p->pid, state, p->name);
 }
 
+// Copies relevant process info from ptable into uprocs array.
+// Returns the number of processes copied on success, and -1
+// on failure.
 int
 ptablecopy(struct uproc *uprocs, int max) {
   struct proc *p;
-  int n = 0;      // number of processes copied
+  int n = 0;        // number of processes copied
+
+  // check max isn't higher than maximum number of processes
+  if(max > NPROC)
+    return -1;
 
   for(p = ptable.proc; p < & ptable.proc[max]; p++){
     if(p->state == RUNNABLE || p->state == RUNNING || p->state == SLEEPING) {
@@ -693,11 +700,12 @@ ptablecopy(struct uproc *uprocs, int max) {
       uprocs[n].uid = p->uid;
       uprocs[n].gid = p->gid;
       uprocs[n].ppid = p->parent->pid;
-      uprocs[n].elapsed_ticks = p->cpu_ticks_total;
-      //uprocs[n].state = p->state;
+      uprocs[n].elapsed_ticks = ticks - p->start_ticks;
+      uprocs[n].CPU_total_ticks = p->cpu_ticks_total;
       uprocs[n].size = p->sz;
-      //uprocs[n].name = p->name;
-      ++n;
+      //TODO: how to copy strings?
+      
+      n++;
     }
   }
   

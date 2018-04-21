@@ -14,6 +14,7 @@ main(void)
   int numProcs;
 
   numProcs = getprocs(MAXPROC, ptable);
+  // TODO: should I use panic() here?
   if(numProcs < 0)
     return -1;
 
@@ -26,10 +27,8 @@ main(void)
         p.gid, p.ppid,
         p.elapsed_ticks,
         p.CPU_total_ticks,
-        "Runnable", p.size,
-        //p.state, p.size,
-        //p.name
-        "Fake Process"
+        p.state, p.size,
+        p.name
     );
   }
 
