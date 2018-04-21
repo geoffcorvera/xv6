@@ -14,9 +14,13 @@ main(void)
   int numProcs;
 
   numProcs = getprocs(MAXPROC, ptable);
-  // TODO: should I use panic() here?
-  if(numProcs < 0)
-    return -1;
+
+  if(numProcs < 0) {
+    printf(2, "Error: getprocs call failed. %s at line %d\n",
+        __FILE__, __LINE__);
+    free(ptable);
+    exit();
+  }
 
   printf(1,
       "PID\tUID\tGID\tPPID\tElapsed\tCPU Time   State\tSize\tName\n");
