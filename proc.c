@@ -547,7 +547,7 @@ procdump(void)
   uint pc[10];
 
 #if defined(CS333_P2)
-#define HEADER "\nUID\tGID\tElapsed\tPID\tState\tName\tPCs\n"
+#define HEADER "\nPID\tName\tUID\tGID\tPPID\tElapsed CPU\tState\tSize\tPCs\n"
 #elif defined(CS333_P1)
 #define HEADER "\nElapsed\tPID\tState\tName\tPCs\n"
 #else
@@ -677,10 +677,27 @@ initFreeList(void) {
 static void
 procdumpP2(struct proc *p, char *state) {
   int elapsed = ticks - p->start_ticks;
-  cprintf("%d\t%d\t", p->uid, p->gid);
-  cprintf("%d.%d\t%d\t%s\t%s\t", elapsed/1000,
-      elapsed%1000, p->pid, state, p->name);
+  //char st[9];
+  
+
+  cprintf("%d\t%s\t%d\t%d\t%d\t",
+      p->pid, p->name, p->uid, p->gid, p->parent->pid);
+  cprintf("%d.%d ", elapsed/1000, elapsed%1000);
+  cprintf("%d.%d\t%s\t%d\t",
+      p->cpu_ticks_total/1000, p->cpu_ticks_total%1000,
+      p->state, p->sz);
 }
+
+/*
+static void
+stateString(char *s, enum procstate st) {
+  switch(st) {
+    case UNUSED:
+      strncpy(s, "Unused");
+
+  }
+}
+*/
 
 // Copies relevant process info from ptable into uprocs array.
 // Returns the number of processes copied on success, and -1

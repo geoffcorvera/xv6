@@ -11,6 +11,11 @@ main(int argc, char *argv[])
   char *args[argc-1]; // args for child process
   char leadingzeros[3];
 
+  if(argc == 1) {
+    printf(1, "took 0.0 seconds\n");
+    exit();
+  }
+
   for(i = 1; i < argc; i++)
     args[i-1] = argv[i]; 
 
@@ -42,10 +47,10 @@ static void
 leftpad(char *s, int n)
 {
   if(n > 100)
-    strcpy("", s);
+    strcpy(s, "");
   else if(n > 10)
-    strcpy("0", s);
+    strcpy(s, "0");
   else
-    strcpy("00", s);
+    strcpy(s, "00");
 }
 #endif
