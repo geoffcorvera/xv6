@@ -154,9 +154,7 @@ sys_getprocs(void){
   if(argptr(1, (void*)&aProcs, sizeof(struct uproc)) < 0)
     return -1;
   
-  // TODO should this take (void*) arg?
   n = ptablecopy(aProcs, max);
-
   return n;
 }
 #endif
