@@ -130,7 +130,7 @@ userinit(void)
 #ifdef CS333_P2
   p->uid = UIDINIT;  // default uid
   p->gid = GIDINIT;  // default gid
-  p->parent = p;     // set itself as parent
+  p->parent = 0;     // first proc doesn't have parent
 #endif
 
   p->state = RUNNABLE;
@@ -679,7 +679,9 @@ procdumpP2(struct proc *p, char *state) {
   int elapsed = ticks - p->start_ticks;
 
   cprintf("%d\t%s\t%d\t%d\t%d\t",
-      p->pid, p->name, p->uid, p->gid, p->parent->pid);
+      p->pid, p->name,
+      p->uid, p->gid,
+      p->parent ? p->parent->pid : p->pid);       // check if parent null
   cprintf("%d.%d ", elapsed/1000, elapsed%1000);
   cprintf("%d.%d\t%s\t%d\t",
       p->cpu_ticks_total/1000, p->cpu_ticks_total%1000,
@@ -703,7 +705,7 @@ ptablecopy(struct uproc *uprocs, int max) {
       uprocs[n].pid = p->pid;
       uprocs[n].uid = p->uid;
       uprocs[n].gid = p->gid;
-      uprocs[n].ppid = p->parent->pid;
+      uprocs[n].ppid = p->parent ? p->parent->pid : p->pid;
       uprocs[n].elapsed_ticks = ticks - p->start_ticks;
       uprocs[n].CPU_total_ticks = p->cpu_ticks_total;
       uprocs[n].size = p->sz;
