@@ -23,16 +23,15 @@ main(void)
   }
 
   printf(1,
-      "PID\tUID\tGID\tPPID\tElapsed\tCPU Time   State\tSize\tName\n");
+      "PID\tName\tUID\tGID\tPPID\tElapsed\tCPU Time   State\tSize\n");
   for(int i = 0; i < numProcs; i++) {
     p = ptable[i]; 
-    printf(1, "%d\t%d\t%d\t%d\t%d\t%d\t   %s\t%d\t%s\n",
-        p.pid, p.uid,
-        p.gid, p.ppid,
+    printf(1, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t   %s\t%d\n",
+        p.pid, p.name,
+        p.uid, p.gid, p.ppid,
         p.elapsed_ticks,
         p.CPU_total_ticks,
-        p.state, p.size,
-        p.name
+        p.state, p.size
     );
   }
 
