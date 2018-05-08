@@ -53,6 +53,8 @@ static void initProcessLists(void);
 static void initFreeList(void);
 static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
+
+static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
 static void procdumpP2(struct proc *p, char *state);
 int ptablecopy(struct uproc* uprocs, int max);
