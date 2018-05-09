@@ -165,6 +165,7 @@ userinit(void)
 #ifdef CS333_P3P4
   p->next = 0;       // set next to null for first process
   acquire(&ptable.lock);
+  //TODO: remove proc from embryo list
   ptable.pLists.ready = ptable.pLists.readyTail = p;
   release(&ptable.lock);
 #else
@@ -400,10 +401,48 @@ scheduler(void)
 }
 
 #else
+//TODO: scheduler
 void
 scheduler(void)
 {
+  struct proc *p;
+  int idle;  // for checking if processor is idle
 
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+
+    idle = 1;  // assume idle unless we schedule a process
+    // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      idle = 0;  // not idle this timeslice
+      proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+#ifdef CS333_P2
+      p->cpu_ticks_in = ticks;
+#endif
+      swtch(&cpu->scheduler, proc->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      proc = 0;
+    }
+    release(&ptable.lock);
+    // if idle, wait for next interrupt
+    if (idle) {
+      sti();
+      hlt();
+    }
+  }
 }
 #endif
 
@@ -513,9 +552,15 @@ wakeup1(void *chan)
       p->state = RUNNABLE;
 }
 #else
+//TODO: wakeup1
 static void
 wakeup1(void *chan)
 {
+  struct proc *p;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    if(p->state == SLEEPING && p->chan == chan)
+      p->state = RUNNABLE;
 
 }
 #endif
@@ -553,11 +598,25 @@ kill(int pid)
   return -1;
 }
 #else
+//TODO: kill routine
 int
 kill(int pid)
 {
+  struct proc *p;
 
-  return 0;  // placeholder
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == pid){
+      p->killed = 1;
+      // Wake process from sleep if necessary.
+      if(p->state == SLEEPING)
+        p->state = RUNNABLE;
+      release(&ptable.lock);
+      return 0;
+    }
+  }
+  release(&ptable.lock);
+  return -1;
 }
 #endif
 
