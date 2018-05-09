@@ -181,13 +181,12 @@ userinit(void)
 #ifdef CS333_P3P4
   p->next = 0;       // set next to null for first process
   acquire(&ptable.lock);
-  //TODO: remove proc from embryo list
   if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryoTail, p) < 0){
     panic("userinit: embryo list empty.");
   }
   p->state = RUNNABLE;
   // add to ready list
-  ptable.pLists.ready = ptable.pLists.readyTail = p;
+  stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, p);
   release(&ptable.lock);
 #else
   p->state = RUNNABLE;
@@ -432,7 +431,6 @@ scheduler(void)
 }
 
 #else
-//TODO: scheduler
 void
 scheduler(void)
 {
@@ -512,7 +510,15 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
+#ifdef CS333_P3P4
+  if(stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc) < 0){
+    panic("yield: proc not in running list\n");
+  }
   proc->state = RUNNABLE;
+  stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, proc);
+#else
+  proc->state = RUNNABLE;
+#endif
   sched();
   release(&ptable.lock);
 }
