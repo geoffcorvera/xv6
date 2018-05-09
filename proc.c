@@ -257,7 +257,6 @@ fork(void)
 
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
-  //TODO: add np to ready list
 #ifdef CS333_P3P4
   if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryoTail, np) < 0) {
     cprintf("fork: embryo list empty or np not found\n");
@@ -447,9 +446,11 @@ scheduler(void)
     idle = 1;  // assume idle unless we schedule a process
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
+    if(ptable.pLists.ready != 0) {
+      p = ptable.pLists.ready;
+      if(p->state != RUNNABLE){
+        panic("proc in ready list not runnable\n");
+      }
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -457,7 +458,10 @@ scheduler(void)
       idle = 0;  // not idle this timeslice
       proc = p;
       switchuvm(p);
+
+      stateListRemove(&ptable.pLists.ready, &ptable.pLists.readyTail, p);
       p->state = RUNNING;
+      stateListAdd(&ptable.pLists.running, &ptable.pLists.runningTail, p);
 #ifdef CS333_P2
       p->cpu_ticks_in = ticks;
 #endif
