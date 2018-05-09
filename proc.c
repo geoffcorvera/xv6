@@ -135,7 +135,6 @@ userinit(void)
   acquire(&ptable.lock);
   initProcessLists();
   initFreeList();
-  
   release(&ptable.lock);
 #endif
 
@@ -165,6 +164,9 @@ userinit(void)
 
 #ifdef CS333_P3P4
   p->next = 0;       // set next to null for first process
+  acquire(&ptable.lock);
+  ptable.pLists.ready = ptable.pLists.readyTail = p;
+  release(&ptable.lock);
 #else
   p->state = RUNNABLE;
 #endif
