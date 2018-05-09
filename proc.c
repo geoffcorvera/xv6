@@ -131,7 +131,15 @@ userinit(void)
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
-  p = allocproc();
+#ifdef CS333_P3P4
+  acquire(&ptable.lock);
+  initProcessLists();
+  initFreeList();
+  
+  release(&ptable.lock);
+#endif
+
+  p = allocproc();    // moves a process from free list to embryo list
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -155,7 +163,11 @@ userinit(void)
   p->parent = 0;     // first proc doesn't have parent
 #endif
 
+#ifdef CS333_P3P4
+  p->next = 0;       // set next to null for first process
+#else
   p->state = RUNNABLE;
+#endif
 }
 
 // Grow current process's memory by n bytes.
