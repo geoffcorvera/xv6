@@ -79,6 +79,7 @@ allocproc(void)
   struct proc *p;
   char *sp;
 
+#ifndef CS333_P3P4
   acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == UNUSED)
@@ -88,6 +89,21 @@ allocproc(void)
 
 found:
   p->state = EMBRYO;
+#else
+  acquire(&ptable.lock);
+  p = ptable.pLists.free;
+  if(p == 0){       // no free processes available
+    release(&ptable.lock);
+    return 0;
+  }
+  else if(p->state != UNUSED){
+    panic("Proc in free list not in UNUSED state\n");
+  }
+  stateListRemove(&ptable.pLists.free, &ptable.pLists.freeTail, p);
+  p->state = EMBRYO;
+  stateListAdd(&ptable.pLists.embryo, &ptable.pLists.embryoTail, p);
+#endif
+
   p->pid = nextpid++;
   release(&ptable.lock);
 
@@ -166,6 +182,11 @@ userinit(void)
   p->next = 0;       // set next to null for first process
   acquire(&ptable.lock);
   //TODO: remove proc from embryo list
+  if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryoTail, p) < 0){
+    panic("userinit: embryo list empty.");
+  }
+  p->state = RUNNABLE;
+  // add to ready list
   ptable.pLists.ready = ptable.pLists.readyTail = p;
   release(&ptable.lock);
 #else
