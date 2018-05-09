@@ -257,7 +257,18 @@ fork(void)
 
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
+  //TODO: add np to ready list
+#ifdef CS333_P3P4
+  if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryoTail, np) < 0) {
+    cprintf("fork: embryo list empty or np not found\n");
+    release(&ptable.lock);
+    return -1;
+  }
   np->state = RUNNABLE;
+  stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, np);
+#else
+  np->state = RUNNABLE;
+#endif
   release(&ptable.lock);
 
   return pid;
