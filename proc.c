@@ -56,6 +56,7 @@ static int stateListRemove(struct proc** head, struct proc** tail, struct proc* 
 static int findChildren(struct proc *parent);
 static int numberChildren(struct proc *head, struct proc *parent);
 static int killFromList(struct proc *head, int pid);
+static void assertState(struct proc *p, enum procstate state);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -947,6 +948,12 @@ killFromList(struct proc *head, int pid) {
     p = p->next;
   }
   return 0;
+}
+
+static void
+assertState(struct proc *p, enum procstate state) {
+  if(p->state != state)
+    panic(states[state]);
 }
 #endif
 
