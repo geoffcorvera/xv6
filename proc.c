@@ -189,7 +189,7 @@ userinit(void)
   }
   p->state = RUNNABLE;
   // add to ready list
-  stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, p);
+  ptable.pLists.ready = ptable.pLists.readyTail = p; 
   release(&ptable.lock);
 #else
   p->state = RUNNABLE;
@@ -358,8 +358,13 @@ exit(void)
   }
 
   // Jump into the scheduler, never to return.
-  //TODO: exit routine
+#ifdef CS333_P3P4
+  stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc);
   proc->state = ZOMBIE;
+  stateListAdd(&ptable.pLists.zombie, &ptable.pLists.zombieTail, proc);
+#else
+  proc->state = ZOMBIE;
+#endif
   sched();
   panic("zombie exit");
 
@@ -595,9 +600,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
 #ifdef CS333_P3P4
-  if(stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc) < 0){
-    panic("yield: proc not in running list\n");
-  }
+  stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc);
   proc->state = RUNNABLE;
   stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, proc);
 #else
@@ -654,7 +657,7 @@ sleep(void *chan, struct spinlock *lk)
 #ifdef CS333_P3P4
   stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc);
   proc->state = SLEEPING;
-  stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, proc);
+  stateListAdd(&ptable.pLists.sleep, &ptable.pLists.sleepTail, proc);
 #else
   proc->state = SLEEPING;
 #endif
