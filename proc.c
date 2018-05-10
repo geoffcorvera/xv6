@@ -521,18 +521,20 @@ scheduler(void)
     idle = 1;  // assume idle unless we schedule a process
     // check ready list looking for process to run.
     acquire(&ptable.lock);
-    if(ptable.pLists.ready != 0) {
-      p = ptable.pLists.ready;
-      assertState(p, RUNNABLE);
 
+    // Loop over priority queues looking for highest priority process
+    for(int priority = 0; priority < MAXPRIO; priority++){
+      p = ptable.pLists.ready[priority];
+      if(p == 0)
+        continue;
+      assertState(p, RUNNABLE);
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       idle = 0;  // not idle this timeslice
       proc = p;
       switchuvm(p);
-
-      stateTransfer(&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE
+      stateTransfer(&ptable.pLists.ready[priority], &ptable.pLists.readyTail[priority], RUNNABLE
           ,&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING, p);
 #ifdef CS333_P2
       p->cpu_ticks_in = ticks;
@@ -544,6 +546,7 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       proc = 0;
     }
+
     release(&ptable.lock);
     // if idle, wait for next interrupt
     if (idle) {
