@@ -184,12 +184,8 @@ userinit(void)
 #ifdef CS333_P3P4
   p->next = 0;       // set next to null for first process
   acquire(&ptable.lock);
-  if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryoTail, p) < 0){
-    panic("userinit: embryo list empty.");
-  }
-  p->state = RUNNABLE;
-  // add to ready list
-  ptable.pLists.ready = ptable.pLists.readyTail = p; 
+  stateTransfer(&ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO,
+    &ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, p);
   release(&ptable.lock);
 #else
   p->state = RUNNABLE;
@@ -260,13 +256,8 @@ fork(void)
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
 #ifdef CS333_P3P4
-  if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryoTail, np) < 0) {
-    cprintf("fork: embryo list empty or np not found\n");
-    release(&ptable.lock);
-    return -1;
-  }
-  np->state = RUNNABLE;
-  stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, np);
+  stateTransfer(&ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO
+      ,&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, np);
 #else
   np->state = RUNNABLE;
 #endif
@@ -359,9 +350,8 @@ exit(void)
 
   // Jump into the scheduler, never to return.
 #ifdef CS333_P3P4
-  stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc);
-  proc->state = ZOMBIE;
-  stateListAdd(&ptable.pLists.zombie, &ptable.pLists.zombieTail, proc);
+  stateTransfer(&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING
+      ,&ptable.pLists.zombie, &ptable.pLists.zombieTail, ZOMBIE, proc);
 #else
   proc->state = ZOMBIE;
 #endif
@@ -441,11 +431,8 @@ wait(void)
       kfree(p->kstack);
       p->kstack = 0;
       freevm(p->pgdir);
-
-      stateListRemove(&ptable.pLists.zombie, &ptable.pLists.zombieTail, p);
-      p->state = UNUSED;
-      stateListAdd(&ptable.pLists.free, &ptable.pLists.freeTail, p);
-
+      stateTransfer(&ptable.pLists.zombie, &ptable.pLists.zombieTail, ZOMBIE
+          ,&ptable.pLists.free, &ptable.pLists.freeTail, UNUSED, p);
       p->pid = 0;
       p->parent = 0;
       p->name[0] = 0;
@@ -546,9 +533,8 @@ scheduler(void)
       proc = p;
       switchuvm(p);
 
-      stateListRemove(&ptable.pLists.ready, &ptable.pLists.readyTail, p);
-      p->state = RUNNING;
-      stateListAdd(&ptable.pLists.running, &ptable.pLists.runningTail, p);
+      stateTransfer(&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE
+          ,&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING, p);
 #ifdef CS333_P2
       p->cpu_ticks_in = ticks;
 #endif
@@ -600,9 +586,8 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
 #ifdef CS333_P3P4
-  stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc);
-  proc->state = RUNNABLE;
-  stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, proc);
+  stateTransfer(&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING
+      ,&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, proc);
 #else
   proc->state = RUNNABLE;
 #endif
@@ -655,9 +640,8 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   proc->chan = chan;
 #ifdef CS333_P3P4
-  stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc);
-  proc->state = SLEEPING;
-  stateListAdd(&ptable.pLists.sleep, &ptable.pLists.sleepTail, proc);
+  stateTransfer(&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING
+      ,&ptable.pLists.sleep, &ptable.pLists.sleepTail, SLEEPING, proc);
 #else
   proc->state = SLEEPING;
 #endif
@@ -694,10 +678,9 @@ wakeup1(void *chan)
 
   p = ptable.pLists.sleep;
   while(p) {
-    if(p->state == SLEEPING && p->chan == chan) {
-      stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, p);
-      p->state = RUNNABLE;
-      stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, p);
+    if(p->chan == chan) {
+      stateTransfer(&ptable.pLists.sleep, &ptable.pLists.sleepTail, SLEEPING
+          ,&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, p);
     }
     p = p->next;
   }
