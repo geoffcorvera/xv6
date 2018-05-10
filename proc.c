@@ -756,8 +756,8 @@ static char *states[] = {
   [UNUSED]    "unused",
   [EMBRYO]    "embryo",
   [SLEEPING]  "sleep ",
-  [RUNNABLE]  "runble",
-  [RUNNING]   "run   ",
+  [RUNNABLE]  "runnable",
+  [RUNNING]   "running",
   [ZOMBIE]    "zombie"
 };
 
@@ -988,22 +988,7 @@ ptablecopy(struct uproc *uprocs, int max) {
       uprocs[n].CPU_total_ticks = p->cpu_ticks_total;
       uprocs[n].size = p->sz;
       strncpy(uprocs[n].name, p->name, STRMAX);
-      switch(p->state) {
-        case RUNNABLE:
-          strncpy(uprocs[n].state, "Runnable", STRMAX);
-          break;
-        
-        case RUNNING:
-          strncpy(uprocs[n].state, "Running", STRMAX);
-          break;
-
-        case SLEEPING:
-          strncpy(uprocs[n].state, "Sleeping", STRMAX);
-          break;
-        
-        default:
-          break;
-      }
+      strncpy(uprocs[n].state, states[p->state], STRMAX);
 
       n++;
     }
