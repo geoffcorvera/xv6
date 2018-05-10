@@ -15,10 +15,14 @@
 #include "spinlock.h"
 #include "uproc.h"
 
+//TODO: find spec for MAXPRIO
+#define MAXPRIO 4;
+
+//TODO: refactor ready list manipulations
 #ifdef CS333_P3P4
 struct StateLists {
-  struct proc* ready;
-  struct proc* readyTail;
+  struct proc* ready[MAXPRIO+1];
+  struct proc* readyTail[MAXPRIO+1];
   struct proc* free;
   struct proc* freeTail;
   struct proc* sleep;
