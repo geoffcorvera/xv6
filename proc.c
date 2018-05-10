@@ -518,13 +518,11 @@ scheduler(void)
     sti();
 
     idle = 1;  // assume idle unless we schedule a process
-    // Loop over process table looking for process to run.
+    // check ready list looking for process to run.
     acquire(&ptable.lock);
     if(ptable.pLists.ready != 0) {
       p = ptable.pLists.ready;
-      if(p->state != RUNNABLE){
-        panic("proc in ready list not runnable\n");
-      }
+      assertState(p, RUNNABLE);
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
