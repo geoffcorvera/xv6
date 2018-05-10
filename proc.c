@@ -55,6 +55,7 @@ static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
 static int findChildren(struct proc *parent);
 static int numberChildren(struct proc *head, struct proc *parent);
+static int killFromList(struct proc *head, int pid);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -695,23 +696,16 @@ kill(int pid)
   return -1;
 }
 #else
-//TODO: kill routine
 int
 kill(int pid)
 {
-  struct proc *p;
-
   acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == pid){
-      p->killed = 1;
-      // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
-        p->state = RUNNABLE;
-      release(&ptable.lock);
-      return 0;
-    }
+  if(killFromList(ptable.pLists.ready, pid) || killFromList(ptable.pLists.running, pid)
+      || killFromList(ptable.pLists.sleep, pid)) {
+    release(&ptable.lock);
+    return 0;
   }
+
   release(&ptable.lock);
   return -1;
 }
@@ -890,6 +884,28 @@ numberChildren(struct proc *head, struct proc *parent) {
     p = p->next;
   }
   return count;
+}
+
+static int
+killFromList(struct proc *head, int pid) {
+  if(*head == 0 || pid == 0) {
+    return 0;
+  }
+  struct proc *p;
+
+  p = head;
+  while(p) {
+    if(p->pid == pid) {
+      p->killed = 1;
+      // Wake proc from sleep if necessary.
+      stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, p);
+      p->state = RUNNABLE;
+      stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, p);
+      return 1;
+    } 
+    p = p->next;
+  }
+  return 0;
 }
 #endif
 
