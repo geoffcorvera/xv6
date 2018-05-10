@@ -15,9 +15,6 @@
 #include "spinlock.h"
 #include "uproc.h"
 
-//TODO: find spec for MAXPRIO
-#define MAXPRIO 4;
-
 //TODO: refactor ready list manipulations
 #ifdef CS333_P3P4
 struct StateLists {
