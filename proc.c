@@ -53,6 +53,8 @@ static void initProcessLists(void);
 static void initFreeList(void);
 static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
+static int findChildren(struct proc *parent);
+static int numberChildren(struct proc *head, struct proc *parent);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -372,8 +374,51 @@ wait(void)
 int
 wait(void)
 {
+  struct proc *p;
+  int havekids, pid;
 
-  return 0;  // placeholder
+  acquire(&ptable.lock);
+  for(;;){
+    //get number of children
+    havekids = findChildren(proc);
+    p = ptable.pLists.zombie;
+    //look for zombie children; skip if empty
+    while(p) {
+      if(p->parent != proc) {
+        p = p->next;
+        continue;
+      }
+      havekids++;
+      if(p->state != ZOMBIE)
+        panic("wait !zombie");
+
+      // Found one.
+      pid = p->pid;
+      kfree(p->kstack);
+      p->kstack = 0;
+      freevm(p->pgdir);
+
+      stateListRemove(&ptable.pLists.zombie, &ptable.pLists.zombieTail, p);
+      p->state = UNUSED;
+      stateListAdd(&ptable.pLists.free, &ptable.pLists.freeTail, p);
+
+      p->pid = 0;
+      p->parent = 0;
+      p->name[0] = 0;
+      p->killed = 0;
+      release(&ptable.lock);
+      return pid;
+    }
+
+    // No point waiting if we don't have any children.
+    if(!havekids || proc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(proc, &ptable.lock);  //DOC: wait-sleep
+  }
 }
 #endif
 
@@ -810,6 +855,35 @@ initFreeList(void) {
     p->state = UNUSED;
     stateListAdd(&ptable.pLists.free, &ptable.pLists.freeTail, p);
   }
+}
+
+// checks ready, sleep and running lists for children
+static int
+findChildren(struct proc *parent) {
+  int count;
+
+  if(!holding(&ptable.lock))
+    panic("findChildren ptable.lock");
+  count = 0;
+  count += numberChildren(ptable.pLists.ready, parent);
+  count += numberChildren(ptable.pLists.sleep, parent);
+  count += numberChildren(ptable.pLists.running, parent);
+  return count;
+}
+
+static int
+numberChildren(struct proc *head, struct proc *parent) {
+  int count;
+  struct proc *p;
+
+  count = 0;
+  p = head;
+  while(p) {
+    if(p->parent == parent)
+      count++;
+    p = p->next;
+  }
+  return count;
 }
 #endif
 
