@@ -57,6 +57,8 @@ static int findChildren(struct proc *parent);
 static int numberChildren(struct proc *head, struct proc *parent);
 static int killFromList(struct proc *head, int pid);
 static void assertState(struct proc *p, enum procstate state);
+static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState,
+  struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -100,12 +102,9 @@ found:
     release(&ptable.lock);
     return 0;
   }
-  else if(p->state != UNUSED){
-    panic("Proc in free list not in UNUSED state\n");
-  }
-  stateListRemove(&ptable.pLists.free, &ptable.pLists.freeTail, p);
-  p->state = EMBRYO;
-  stateListAdd(&ptable.pLists.embryo, &ptable.pLists.embryoTail, p);
+  stateTransfer(
+      &ptable.pLists.free, &ptable.pLists.freeTail, UNUSED, 
+      &ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO, p);
 #endif
 
   p->pid = nextpid++;
@@ -954,6 +953,17 @@ static void
 assertState(struct proc *p, enum procstate state) {
   if(p->state != state)
     panic(states[state]);
+}
+
+static void
+stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState
+    ,struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p)
+{
+  if(stateListRemove(fromHead, fromTail, p) < 0)
+    panic("state list remove fail");
+  assertState(p, oldState);
+  p->state = newState;
+  stateListAdd(toHead, toTail, p);
 }
 #endif
 
