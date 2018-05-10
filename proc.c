@@ -593,6 +593,7 @@ forkret(void)
 // Reacquires lock when awakened.
 // 2016/12/28: ticklock removed from xv6. sleep() changed to
 // accept a NULL lock to accommodate.
+//TODO: sleep transition
 void
 sleep(void *chan, struct spinlock *lk)
 {
@@ -612,7 +613,13 @@ sleep(void *chan, struct spinlock *lk)
 
   // Go to sleep.
   proc->chan = chan;
+#ifdef CS333_P3P4
+  stateListRemove(&ptable.pLists.running, &ptable.pLists.runningTail, proc);
   proc->state = SLEEPING;
+  stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, proc);
+#else
+  proc->state = SLEEPING;
+#endif
   sched();
 
   // Tidy up.
