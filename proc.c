@@ -593,7 +593,6 @@ forkret(void)
 // Reacquires lock when awakened.
 // 2016/12/28: ticklock removed from xv6. sleep() changed to
 // accept a NULL lock to accommodate.
-//TODO: sleep transition
 void
 sleep(void *chan, struct spinlock *lk)
 {
