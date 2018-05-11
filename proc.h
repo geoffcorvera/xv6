@@ -77,6 +77,7 @@ struct proc {
 #endif
 #ifdef CS333_P3P4
   struct proc *next;           // next process in state list
+  uint priority;               // MLFQ scheduling priority
 #endif
 };
 
