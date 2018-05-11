@@ -193,7 +193,7 @@ userinit(void)
   p->next = 0;       // set next to null for first process
   acquire(&ptable.lock);
   stateTransfer(&ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO,
-    &ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, p);
+    &ptable.pLists.ready[p->priority], &ptable.pLists.readyTail[p->priority], RUNNABLE, p);
   release(&ptable.lock);
 #else
   p->state = RUNNABLE;
@@ -265,7 +265,7 @@ fork(void)
   acquire(&ptable.lock);
 #ifdef CS333_P3P4
   stateTransfer(&ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO
-      ,&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, np);
+      ,&ptable.pLists.ready[np->priority], &ptable.pLists.readyTail[np->priority], RUNNABLE, np);
 #else
   np->state = RUNNABLE;
 #endif
@@ -535,6 +535,7 @@ scheduler(void)
       if(p == 0)
         continue;
       assertState(p, RUNNABLE);
+      assertPriority(p, priority);
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
@@ -596,7 +597,7 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
 #ifdef CS333_P3P4
   stateTransfer(&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING
-      ,&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, proc);
+      ,&ptable.pLists.ready[proc->priority], &ptable.pLists.readyTail[proc->priority], RUNNABLE, proc);
 #else
   proc->state = RUNNABLE;
 #endif
@@ -689,7 +690,7 @@ wakeup1(void *chan)
   while(p) {
     if(p->chan == chan) {
       stateTransfer(&ptable.pLists.sleep, &ptable.pLists.sleepTail, SLEEPING
-          ,&ptable.pLists.ready, &ptable.pLists.readyTail, RUNNABLE, p);
+          ,&ptable.pLists.ready[p->priority], &ptable.pLists.readyTail[p->priority], RUNNABLE, p);
     }
     p = p->next;
   }
@@ -733,6 +734,7 @@ int
 kill(int pid)
 {
   acquire(&ptable.lock);
+  //TODO: refactor kill
   if(killFromList(ptable.pLists.ready, pid) || killFromList(ptable.pLists.running, pid)
       || killFromList(ptable.pLists.sleep, pid)) {
     release(&ptable.lock);
@@ -903,6 +905,7 @@ findChildren(struct proc *parent) {
   if(!holding(&ptable.lock))
     panic("findChildren ptable.lock");
   count = 0;
+  //TODO: numberChildren to use priority queues
   count += numberChildren(ptable.pLists.ready, parent);
   count += numberChildren(ptable.pLists.sleep, parent);
   count += numberChildren(ptable.pLists.running, parent);
