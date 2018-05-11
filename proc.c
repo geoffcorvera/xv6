@@ -61,6 +61,7 @@ static int killFromList(struct proc *head, int pid);
 static void assertState(struct proc *p, enum procstate state);
 static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState,
   struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p);
+static void assertPriority(struct proc *p, int priority);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -955,6 +956,12 @@ stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate old
   assertState(p, oldState);
   p->state = newState;
   stateListAdd(toHead, toTail, p);
+}
+
+static void
+assertPriority(struct proc *p, int priority) {
+  if(p->priority != priority)
+    panic("proc in wrong priorit queue");
 }
 #endif
 
