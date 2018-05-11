@@ -38,6 +38,7 @@ struct {
   struct proc proc[NPROC];
 #ifdef CS333_P3P4
   struct StateLists pLists;
+  uint promoteAtTime;
 #endif
 } ptable;
 
