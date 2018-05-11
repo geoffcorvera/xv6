@@ -62,6 +62,7 @@ static void assertState(struct proc *p, enum procstate state);
 static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState,
   struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p);
 static void assertPriority(struct proc *p, int priority);
+static int killFromReady(int pid);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -734,8 +735,7 @@ int
 kill(int pid)
 {
   acquire(&ptable.lock);
-  //TODO: refactor kill
-  if(killFromList(ptable.pLists.ready, pid) || killFromList(ptable.pLists.running, pid)
+  if(killFromReady(pid) || killFromList(ptable.pLists.running, pid)
       || killFromList(ptable.pLists.sleep, pid)) {
     release(&ptable.lock);
     return 0;
@@ -927,6 +927,18 @@ numberChildren(struct proc *head, struct proc *parent) {
   return count;
 }
 
+// Needs caller to hold ptable.lock
+static int
+killFromReady(int pid) {
+  int i, rc;
+
+  for(i = 0; i < MAXPRIO; i++) {
+    if(killFromList(ptable.pLists.ready[i], pid) == 1)
+      return 1;
+  }
+  return 0;
+}
+
 static int
 killFromList(struct proc *head, int pid) {
   if(head == 0 || pid == 0) {
@@ -941,7 +953,10 @@ killFromList(struct proc *head, int pid) {
       // Wake proc from sleep if necessary.
       stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, p);
       p->state = RUNNABLE;
-      stateListAdd(&ptable.pLists.ready, &ptable.pLists.readyTail, p);
+      //TODO kill sleeping proc: put into highest priority?
+      //TODO setPriority(p->pid, 0);
+      p->priority = 0;
+      stateListAdd(&ptable.pLists.ready[0], &ptable.pLists.readyTail[0], p);
       return 1;
     } 
     p = p->next;
