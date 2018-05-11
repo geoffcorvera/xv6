@@ -531,7 +531,7 @@ scheduler(void)
     acquire(&ptable.lock);
 
     // Loop over priority queues looking for highest priority process
-    for(int priority = 0; priority < MAXPRIO; priority++){
+    for(int priority = 0; priority <= MAXPRIO; priority++){
       p = ptable.pLists.ready[priority];
       if(p == 0)
         continue;
@@ -867,7 +867,7 @@ initProcessLists(void) {
   int i;
 
   // initialize priority queues
-  for(i=0; i<MAXPRIO; i++) {
+  for(i = 0; i <= MAXPRIO; i++) {
     ptable.pLists.ready[i] = 0;
     ptable.pLists.readyTail[i] = 0;
   }
@@ -906,7 +906,9 @@ findChildren(struct proc *parent) {
     panic("findChildren ptable.lock");
   count = 0;
   //TODO: numberChildren to use priority queues
-  count += numberChildren(ptable.pLists.ready, parent);
+  for(int i=0; i <= MAXPRIO; i++) {
+    count += numberChildren(ptable.pLists.ready[i], parent);
+  }
   count += numberChildren(ptable.pLists.sleep, parent);
   count += numberChildren(ptable.pLists.running, parent);
   return count;
@@ -930,9 +932,9 @@ numberChildren(struct proc *head, struct proc *parent) {
 // Needs caller to hold ptable.lock
 static int
 killFromReady(int pid) {
-  int i, rc;
+  int i;
 
-  for(i = 0; i < MAXPRIO; i++) {
+  for(i = 0; i <= MAXPRIO; i++) {
     if(killFromList(ptable.pLists.ready[i], pid) == 1)
       return 1;
   }
