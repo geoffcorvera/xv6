@@ -88,8 +88,9 @@ allocproc(void)
   struct proc *p;
   char *sp;
 
-#ifndef CS333_P3P4
   acquire(&ptable.lock);
+
+#ifndef CS333_P3P4
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == UNUSED)
       goto found;
@@ -99,7 +100,6 @@ allocproc(void)
 found:
   p->state = EMBRYO;
 #else
-  acquire(&ptable.lock);
   p = ptable.pLists.free;
   if(p == 0){       // no free processes available
     release(&ptable.lock);
@@ -111,6 +111,9 @@ found:
 #endif
 
   p->pid = nextpid++;
+#ifdef CS333_P3P4
+  p->priority = 0;
+#endif
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -134,9 +137,11 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-#if defined(CS333_P1)
+#ifdef CS333_P1
   p->start_ticks = ticks;
-#elif defined(CS333_P2)
+#endif
+
+#ifdef CS333_P2
   // initialize to zero
   p->cpu_ticks_total = 0;
   p->cpu_ticks_in = 0;
