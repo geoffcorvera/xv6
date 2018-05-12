@@ -158,3 +158,12 @@ sys_getprocs(void){
   return n;
 }
 #endif
+
+#ifdef CS333_P3P4
+int
+sys_setpriority(void){
+  //TODO: setpriority stub
+  cprintf("hey this works\n");
+  return 0;
+}
+#endif
