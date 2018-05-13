@@ -1,6 +1,6 @@
 // Segments in proc->gdt.
 #define NSEGS     7
-#define MAXPRIO   5    // max number of priority queues for scheduling
+#define MAXPRIO   3    // max number of priority queues for scheduling
 
 // Per-CPU state
 struct cpu {

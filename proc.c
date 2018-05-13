@@ -63,6 +63,8 @@ static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum p
   struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p);
 static void assertPriority(struct proc *p, int priority);
 static int killFromReady(int pid);
+static int findproc(struct proc *head, int pid, struct proc **p);
+int updatePriority(int pid, int priority);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -987,6 +989,48 @@ static void
 assertPriority(struct proc *p, int priority) {
   if(p->priority != priority)
     panic("proc in wrong priorit queue");
+}
+
+static int
+findproc(struct proc *head, int pid, struct proc **p) {
+  struct proc *current;
+  
+  current = head;
+  while(current) {
+    if(current->pid == pid) {
+      *p = current;
+      return 0;
+    }
+    current = current->next;
+  }
+  return -1;
+}
+
+//TODO updatePriority() helper
+int
+updatePriority(int pid, int priority) {
+  struct proc *p;
+
+  acquire(&ptable.lock);
+  // check running processes first
+  if(findproc(ptable.pLists.running, pid, &p) == 0)
+    goto found;
+  // look through priority queues
+  for(int i = 0; i <= MAXPRIO; i++) {
+    if(findproc(ptable.pLists.ready[i], pid, &p) == 0)
+      goto found;
+  }
+  // check sleeping processes
+  if(findproc(ptable.pLists.sleep, pid, &p) == 0)
+    goto found;
+
+  release(&ptable.lock);
+  return -1;
+
+found:
+  p->priority = priority;
+  release(&ptable.lock);
+  return 0;
 }
 #endif
 
