@@ -4,7 +4,13 @@
 
 int
 main() {
-  setpriority(1, 0);
+  int prio, pid;
+
+  pid = 0;
+
+  for(prio=0; prio < 10; prio++)
+    setpriority(pid, prio);
+
   exit();
 }
 #endif
