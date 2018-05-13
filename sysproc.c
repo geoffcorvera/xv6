@@ -170,6 +170,8 @@ sys_setpriority(void){
   if(argint(1, (int*)&priority) < 0 || priority < 0 || priority > MAXPRIO)
     return -1;
 
+  //TODO reset proc budget
+
   return updatePriority(pid, priority);
 }
 #endif
