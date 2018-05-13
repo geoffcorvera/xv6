@@ -1012,6 +1012,9 @@ int
 updatePriority(int pid, int priority) {
   struct proc *p;
 
+  if(pid >= nextpid)
+    return -1;
+
   acquire(&ptable.lock);
   // check running processes first
   if(findproc(ptable.pLists.running, pid, &p) == 0)
