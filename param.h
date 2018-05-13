@@ -14,4 +14,3 @@
 #define FSSIZE       2000  // size of file system in blocks  // CS333 requires a larger FS.
 #define UIDINIT     100  // default user ID
 #define GIDINIT     100  // default group ID 
-#define MAXPRIO     5    // max number of priority queues for scheduling

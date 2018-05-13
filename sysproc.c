@@ -160,10 +160,16 @@ sys_getprocs(void){
 #endif
 
 #ifdef CS333_P3P4
+//TODO sys_setpriority()
 int
 sys_setpriority(void){
-  //TODO: setpriority stub
-  cprintf("hey this works\n");
+  int priority, pid; 
+
+  if(argint(0, (int*)&pid) < 0)
+    return -1;
+  if(argint(1, (int*)&priority) < 0 || priority < 0 || priority > MAXPRIO)
+    return -1;
+
   return 0;
 }
 #endif
