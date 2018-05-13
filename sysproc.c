@@ -160,7 +160,6 @@ sys_getprocs(void){
 #endif
 
 #ifdef CS333_P3P4
-//TODO sys_setpriority()
 int
 sys_setpriority(void){
   int priority, pid; 
@@ -169,8 +168,6 @@ sys_setpriority(void){
     return -1;
   if(argint(1, (int*)&priority) < 0 || priority < 0 || priority > MAXPRIO)
     return -1;
-
-  //TODO reset proc budget
 
   return updatePriority(pid, priority);
 }

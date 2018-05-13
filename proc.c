@@ -116,6 +116,7 @@ found:
   p->pid = nextpid++;
 #ifdef CS333_P3P4
   p->priority = 0;
+  p->budget = BUDGET;
 #endif
   release(&ptable.lock);
 
@@ -1029,6 +1030,7 @@ updatePriority(int pid, int priority) {
 
 found:
   p->priority = priority;
+  p->budget = BUDGET;     // reset budget
   release(&ptable.lock);
   return 0;
 }

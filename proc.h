@@ -1,6 +1,7 @@
 // Segments in proc->gdt.
 #define NSEGS     7
 #define MAXPRIO   3    // max number of priority queues for scheduling
+#define BUDGET    70   // TODO tune budget
 
 // Per-CPU state
 struct cpu {
@@ -79,6 +80,7 @@ struct proc {
 #ifdef CS333_P3P4
   struct proc *next;           // next process in state list
   uint priority;               // MLFQ scheduling priority
+  int budget;                  // MLFQ time budget
 #endif
 };
 
