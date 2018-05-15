@@ -63,8 +63,9 @@ static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum p
   struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p);
 static void assertPriority(struct proc *p, int priority);
 static int killFromReady(int pid);
-static int findproc(struct proc *head, int pid, struct proc **p);
-int updatePriority(int pid, int priority);
+int updatePriority(uint pid, uint priority);
+static int findActiveProc(uint pid, struct proc **p);
+static int findInList(uint pid, struct proc *head,  struct proc **p);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -108,8 +109,7 @@ found:
     release(&ptable.lock);
     return 0;
   }
-  stateTransfer(
-      &ptable.pLists.free, &ptable.pLists.freeTail, UNUSED, 
+  stateTransfer(&ptable.pLists.free, &ptable.pLists.freeTail, UNUSED, 
       &ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO, p);
 #endif
 
@@ -992,10 +992,49 @@ assertPriority(struct proc *p, int priority) {
     panic("proc in wrong priorit queue");
 }
 
+int
+updatePriority(uint pid, uint priority) {
+  struct proc *p;
+
+  acquire(&ptable.lock);
+  if(findActiveProc(pid, &p) < 0) {
+    release(&ptable.lock);
+    return -1;
+  }
+
+  p->priority = priority;
+  p->budget = BUDGET;
+  release(&ptable.lock);
+  return 0;
+}
+
 static int
-findproc(struct proc *head, int pid, struct proc **p) {
+findActiveProc(uint pid, struct proc **p) {
+  int i;
+  const int NUMLISTS = MAXPRIO + 3; // MAXPRIO + 1 queues and 2 other states
+
+  struct proc* activeProcLists[NUMLISTS];
+
+  activeProcLists[0] = ptable.pLists.running;
+  activeProcLists[1] = ptable.pLists.sleep;
+  for(i = 0; i <= MAXPRIO; i++)
+    activeProcLists[i+2] = ptable.pLists.ready[i];
+
+  for(i = 0; i < NUMLISTS; i++) {
+    if(findInList(pid, activeProcLists[i], p) > 0)
+      return 0;
+  }
+
+  return -1;
+}
+
+static int
+findInList(uint pid, struct proc *head,  struct proc **p) {
   struct proc *current;
-  
+
+  if(head == 0)
+    return -1;
+
   current = head;
   while(current) {
     if(current->pid == pid) {
@@ -1007,36 +1046,6 @@ findproc(struct proc *head, int pid, struct proc **p) {
   return -1;
 }
 
-//TODO updatePriority() helper
-int
-updatePriority(int pid, int priority) {
-  struct proc *p;
-
-  if(pid >= nextpid)
-    return -1;
-
-  acquire(&ptable.lock);
-  // check running processes first
-  if(findproc(ptable.pLists.running, pid, &p) == 0)
-    goto found;
-  // look through priority queues
-  for(int i = 0; i <= MAXPRIO; i++) {
-    if(findproc(ptable.pLists.ready[i], pid, &p) == 0)
-      goto found;
-  }
-  // check sleeping processes
-  if(findproc(ptable.pLists.sleep, pid, &p) == 0)
-    goto found;
-
-  release(&ptable.lock);
-  return -1;
-
-found:
-  p->priority = priority;
-  p->budget = BUDGET;     // reset budget
-  release(&ptable.lock);
-  return 0;
-}
 #endif
 
 // Procdump() helper functions

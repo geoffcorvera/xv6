@@ -125,7 +125,7 @@ void            yield(void);
 int             ptablecopy(struct uproc *uprocs, int max);
 #endif
 #ifdef CS333_P3P4
-int             updatePriority(int pid, int priority);
+int             updatePriority(uint pid, uint priority);
 #endif
 
 // swtch.S

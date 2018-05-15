@@ -162,7 +162,7 @@ sys_getprocs(void){
 #ifdef CS333_P3P4
 int
 sys_setpriority(void){
-  int priority, pid; 
+  uint priority, pid; 
 
   if(argint(0, (int*)&pid) < 0)
     return -1;
