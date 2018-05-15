@@ -53,8 +53,8 @@ static void initProcessLists(void);
 static void initFreeList(void);
 static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
-static int findChildren(struct proc *parent);
-static int numberChildren(struct proc *head, struct proc *parent);
+static int hasActiveChildren(void);
+static int numberChildren(struct proc *head);
 static int killFromList(struct proc *head, int pid);
 static void assertState(struct proc *p, enum procstate state);
 static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState,
@@ -413,8 +413,7 @@ wait(void)
 
   acquire(&ptable.lock);
   for(;;){
-    //get number of children
-    havekids = findChildren(proc);
+    havekids = 0;
     p = ptable.pLists.zombie;
     //look for zombie children; skip if empty
     while(p) {
@@ -423,6 +422,7 @@ wait(void)
         continue;
       }
       havekids++;
+
       if(p->state != ZOMBIE)
         panic("wait !zombie");
 
@@ -442,7 +442,8 @@ wait(void)
     }
 
     // No point waiting if we don't have any children.
-    if(!havekids || proc->killed){
+    // TODO check for kids
+    if(!hasActiveChildren() || proc->killed){
       release(&ptable.lock);
       return -1;
     }
@@ -881,27 +882,28 @@ initFreeList(void) {
 
 // checks ready, sleep and running lists for children
 static int
-findChildren(struct proc *parent) {
+hasActiveChildren(void) {
   int count;
 
   if(!holding(&ptable.lock))
-    panic("findChildren ptable.lock");
+    panic("hasActiveChildren acquire ptable.lock");
+
   count = 0;
-  count += numberChildren(ptable.pLists.ready, parent);
-  count += numberChildren(ptable.pLists.sleep, parent);
-  count += numberChildren(ptable.pLists.running, parent);
-  return count;
+  count += numberChildren(ptable.pLists.ready);
+  count += numberChildren(ptable.pLists.sleep);
+  count += numberChildren(ptable.pLists.running);
+  return (count > 0);
 }
 
 static int
-numberChildren(struct proc *head, struct proc *parent) {
+numberChildren(struct proc *head) {
   int count;
   struct proc *p;
 
   count = 0;
   p = head;
   while(p) {
-    if(p->parent == parent)
+    if(p->parent == proc)
       count++;
     p = p->next;
   }
@@ -941,7 +943,7 @@ stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate old
     ,struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p)
 {
   if(stateListRemove(fromHead, fromTail, p) < 0)
-    panic("state list remove fail");
+    panic("stateTransfer > stateListRemove failed");
   assertState(p, oldState);
   p->state = newState;
   stateListAdd(toHead, toTail, p);
