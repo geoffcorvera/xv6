@@ -64,6 +64,7 @@ static void assertPriority(struct proc *p, int priority);
 int updatePriority(uint pid, uint priority);
 static int findActiveProc(uint pid, struct proc **p);
 static int findInList(uint pid, struct proc *head,  struct proc **p);
+static void promote(void);
 
 static void procdumpP2(struct proc *p, char *state);
 #elif defined(CS333_P2)
@@ -77,6 +78,7 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+  ptable.promoteAtTime = TICKS_TO_PROMOTE;
 }
 
 //PAGEBREAK: 32
@@ -548,6 +550,10 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       proc = 0;
+
+      // Check if time to promote all processes
+      if(ticks >= ptable.promoteAtTime)
+        promote();
     }
 
     release(&ptable.lock);
@@ -557,6 +563,45 @@ scheduler(void)
       hlt();
     }
   }
+}
+
+void
+promote(void)
+{
+  int priority;
+  struct proc *p, *next;
+
+  // don't need to promote if already highest priority
+  for(priority = 1; priority <= MAXPRIO; priority++) {
+    p = ptable.pLists.ready[priority];
+
+    while(p) {
+      next = p->next;
+      assertState(p, RUNNABLE);
+      assertPriority(p, priority);
+      stateListRemove(&ptable.pLists.ready[priority], &ptable.pLists.readyTail[priority], p);
+      p->priority = (priority - 1);
+      stateListAdd(&ptable.pLists.ready[priority - 1], &ptable.pLists.readyTail[priority - 1], p);
+
+      p = next;
+    }
+  }
+
+  p = ptable.pLists.sleep;
+  while(p) {
+    if(p->priority > 0)
+      p->priority = p->priority - 1;
+    p = p->next;
+  }
+
+  p = ptable.pLists.running;
+  while(p) {
+    if(p->priority > 0)
+      p->priority = p->priority - 1;
+    p = p->next;
+  }
+
+  ptable.promoteAtTime = ticks + TICKS_TO_PROMOTE;
 }
 #endif
 
@@ -686,6 +731,7 @@ wakeup1(void *chan)
     if(p->chan == chan) {
       stateTransfer(&ptable.pLists.sleep, &ptable.pLists.sleepTail, SLEEPING
           ,&ptable.pLists.ready[p->priority], &ptable.pLists.readyTail[p->priority], RUNNABLE, p);
+      break;
     }
     p = p->next;
   }
@@ -748,9 +794,8 @@ kill(int pid)
   while(p) {
     if(p->pid == pid) {
       p->priority = 0;
-      stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, p);
-      p->state = RUNNABLE;
-      stateListAdd(&ptable.pLists.ready[p->priority], &ptable.pLists.ready[p->priority], p);
+      stateTransfer(&ptable.pLists.sleep, &ptable.pLists.sleepTail, SLEEPING
+          ,&ptable.pLists.ready[0], &ptable.pLists.readyTail[0], RUNNABLE, p);
       goto setkilled;
     }
     p = p->next;
