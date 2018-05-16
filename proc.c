@@ -56,13 +56,11 @@ static void initFreeList(void);
 static int stateListAdd(struct proc** head, struct proc** tail, struct proc* p);
 static int stateListRemove(struct proc** head, struct proc** tail, struct proc* p);
 static int hasActiveChildren(void);
-static int numberChildren(struct proc *head);
-static int killFromList(struct proc *head, int pid);
+static int hasChild(struct proc *head);
 static void assertState(struct proc *p, enum procstate state);
 static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState,
   struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p);
 static void assertPriority(struct proc *p, int priority);
-static int killFromReady(int pid);
 int updatePriority(uint pid, uint priority);
 static int findActiveProc(uint pid, struct proc **p);
 static int findInList(uint pid, struct proc *head,  struct proc **p);
@@ -365,7 +363,6 @@ exit(void)
       ,&ptable.pLists.zombie, &ptable.pLists.zombieTail, ZOMBIE, proc);
   sched();
   panic("zombie exit");
-
 }
 #endif
 
@@ -417,11 +414,10 @@ int
 wait(void)
 {
   struct proc *p;
-  int havekids, pid;
+  int pid;
 
   acquire(&ptable.lock);
   for(;;){
-    havekids = 0;
     p = ptable.pLists.zombie;
     //look for zombie children; skip if empty
     while(p) {
@@ -429,7 +425,6 @@ wait(void)
         p = p->next;
         continue;
       }
-      havekids++;
 
       if(p->state != ZOMBIE)
         panic("wait !zombie");
@@ -448,7 +443,7 @@ wait(void)
       release(&ptable.lock);
       return pid;
     }
-
+    // No zombie kids, but they might not have exited yet.
     // No point waiting if we don't have any children.
     if(!hasActiveChildren() || proc->killed){
       release(&ptable.lock);
@@ -733,15 +728,50 @@ kill(int pid)
 int
 kill(int pid)
 {
+  int i;
+  struct proc *p;
+
   acquire(&ptable.lock);
-  if(killFromReady(pid) || killFromList(ptable.pLists.running, pid)
-      || killFromList(ptable.pLists.sleep, pid)) {
-    release(&ptable.lock);
-    return 0;
+  // check ready list
+  for(i = 0; i <= MAXPRIO; i++) {
+    p = ptable.pLists.ready[i];
+    while(p) {
+      if(p->pid == pid)
+        goto setkilled;
+
+      p = p -> next;
+    }
+  }
+
+  // check sleep list
+  p = ptable.pLists.sleep;
+  while(p) {
+    if(p->pid == pid) {
+      p->priority = 0;
+      stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, p);
+      p->state = RUNNABLE;
+      stateListAdd(&ptable.pLists.ready[p->priority], &ptable.pLists.ready[p->priority], p);
+      goto setkilled;
+    }
+    p = p->next;
+  }
+
+  // check running list
+  p = ptable.pLists.running;
+  while(p) {
+    if(p->pid == pid)
+      goto setkilled;
+
+    p = p->next;
   }
 
   release(&ptable.lock);
   return -1;
+
+setkilled:
+  p->killed = 1;
+  release(&ptable.lock);
+  return 0;
 }
 #endif
 
@@ -902,67 +932,27 @@ initFreeList(void) {
 // checks ready, sleep and running lists for children
 static int
 hasActiveChildren(void) {
-  int count;
-
   if(!holding(&ptable.lock))
     panic("acquire ptable.lock before calling hasActiveChildren\n");
 
-  count = 0;
-  for(int i=0; i <= MAXPRIO; i++) {
-    count += numberChildren(ptable.pLists.ready[i]);
+  for(int i = 0; i <= MAXPRIO; i++) {
+    if(hasChild(ptable.pLists.ready[i]))
+        return 1;
   }
-  count += numberChildren(ptable.pLists.sleep);
-  count += numberChildren(ptable.pLists.running);
-  return (count > 0);
+
+  return (hasChild(ptable.pLists.sleep) || hasChild(ptable.pLists.running));
 }
 
+// Checks if current proc has child in given list
 static int
-numberChildren(struct proc *head) {
-  int count;
+hasChild(struct proc *head) {
   struct proc *p;
 
-  count = 0;
   p = head;
   while(p) {
     if(p->parent == proc)
-      count++;
-    p = p->next;
-  }
-  return count;
-}
-
-// Needs caller to hold ptable.lock
-static int
-killFromReady(int pid) {
-  int i;
-
-  for(i = 0; i <= MAXPRIO; i++) {
-    if(killFromList(ptable.pLists.ready[i], pid) == 1)
       return 1;
-  }
-  return 0;
-}
-
-static int
-killFromList(struct proc *head, int pid) {
-  if(head == 0 || pid == 0) {
-    return 0;
-  }
-  struct proc *p;
-
-  p = head;
-  while(p) {
-    if(p->pid == pid) {
-      p->killed = 1;
-      // Wake proc from sleep if necessary.
-      stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleepTail, p);
-      p->state = RUNNABLE;
-      //TODO kill sleeping proc: put into highest priority?
-      //TODO setPriority(p->pid, 0);
-      p->priority = 0;
-      stateListAdd(&ptable.pLists.ready[0], &ptable.pLists.readyTail[0], p);
-      return 1;
-    } 
+    
     p = p->next;
   }
   return 0;
