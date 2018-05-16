@@ -268,8 +268,9 @@ fork(void)
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
 #ifdef CS333_P3P4
+  assertPriority(np, 0);
   stateTransfer(&ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO
-      ,&ptable.pLists.ready[np->priority], &ptable.pLists.readyTail[np->priority], RUNNABLE, np);
+      ,&ptable.pLists.ready[0], &ptable.pLists.readyTail[0], RUNNABLE, np);
 #else
   np->state = RUNNABLE;
 #endif
@@ -347,7 +348,6 @@ exit(void)
   proc->cwd = 0;
 
   acquire(&ptable.lock);
-
   // Parent might be sleeping in wait().
   wakeup1(proc->parent);
 
@@ -510,7 +510,6 @@ scheduler(void)
     }
   }
 }
-
 #else
 void
 scheduler(void)
@@ -874,7 +873,6 @@ procdump(void)
     cprintf("\n");
   }
 }
-
 
 #ifdef CS333_P3P4
 static int
