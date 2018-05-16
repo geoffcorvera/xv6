@@ -830,6 +830,9 @@ stateListRemove(struct proc** head, struct proc** tail, struct proc* p)
 
   if (current == p) {
     *head = (*head)->next;
+    if(*tail == p){
+      *tail = 0;
+    }
     return 0;
   }
 
