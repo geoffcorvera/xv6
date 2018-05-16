@@ -564,6 +564,8 @@ scheduler(void)
   }
 }
 
+// Periodic promotion resets budget to encourage low priority processes
+// to make some progress (except for currently running procs)
 void
 promote(void)
 {
@@ -581,6 +583,7 @@ promote(void)
       stateListRemove(&ptable.pLists.ready[priority], &ptable.pLists.readyTail[priority], p);
       p->priority = (priority - 1);
       stateListAdd(&ptable.pLists.ready[priority - 1], &ptable.pLists.readyTail[priority - 1], p);
+      p->budget = BUDGET;
 
       p = next;
     }
@@ -588,15 +591,19 @@ promote(void)
 
   p = ptable.pLists.sleep;
   while(p) {
-    if(p->priority > 0)
-      p->priority = p->priority - 1;
+    if(p->priority > 0) {
+      p->priority -= 1;
+      p->budget = BUDGET;
+    }
     p = p->next;
   }
 
+  // running processes don't get their budget reset
   p = ptable.pLists.running;
   while(p) {
-    if(p->priority > 0)
-      p->priority = p->priority - 1;
+    if(p->priority > 0) {
+      p->priority -= 1;
+    }
     p = p->next;
   }
 
