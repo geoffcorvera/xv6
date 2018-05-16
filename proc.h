@@ -1,7 +1,5 @@
 // Segments in proc->gdt.
 #define NSEGS     7
-#define MAXPRIO   3    // max number of priority queues for scheduling
-#define BUDGET    70   // TODO tune budget
 
 // Per-CPU state
 struct cpu {
