@@ -361,12 +361,8 @@ exit(void)
   }
 
   // Jump into the scheduler, never to return.
-#ifdef CS333_P3P4
   stateTransfer(&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING
       ,&ptable.pLists.zombie, &ptable.pLists.zombieTail, ZOMBIE, proc);
-#else
-  proc->state = ZOMBIE;
-#endif
   sched();
   panic("zombie exit");
 
@@ -1001,7 +997,6 @@ updatePriority(uint pid, uint priority) {
     release(&ptable.lock);
     return -1;
   }
-
   p->priority = priority;
   p->budget = BUDGET;
   release(&ptable.lock);
