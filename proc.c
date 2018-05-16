@@ -642,6 +642,12 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
 #ifdef CS333_P3P4
+  proc->budget -= ticks - proc->cpu_ticks_in;
+  // demote if used up budget
+  if(proc->budget <= 0) {
+    proc->priority++;
+    proc->budget = BUDGET;
+  }
   stateTransfer(&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING
       ,&ptable.pLists.ready[proc->priority], &ptable.pLists.readyTail[proc->priority], RUNNABLE, proc);
 #else
