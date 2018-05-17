@@ -1050,6 +1050,8 @@ static int
 stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState
     ,struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p)
 {
+  if(!holding(&ptable.lock))
+    panic("acquire lock before calling stateTransfer\n");
   if(stateListRemove(fromHead, fromTail, p) < 0)
     return -1;
   assertState(p, oldState);
