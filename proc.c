@@ -1118,13 +1118,33 @@ findInList(uint pid, struct proc *head,  struct proc **p) {
   return -1;
 }
 
+void
+listprint() {
+  struct proc *p;
+  
+  cprintf("Ready List Processes:\n");
+  acquire(&ptable.lock);
+  for(int i = 0; i <= MAXPRIO; i++) {
+    p = ptable.pLists.ready[i];
+    cprintf("\n%d: ", i);
+    while(p) {
+      cprintf("(%d, %d)", p->pid, p->budget);
+      p = p->next;
+      if(p)
+        cprintf(" -> ");
+    }
+  }
+  release(&ptable.lock);
+  cprintf("\n$ ");
+}
+
 static void
 procdumpP3P4(struct proc *p, char *state) {
   int elapsed = ticks - p->start_ticks;
 
   cprintf("%d\t", p->pid);
   cprintf("%s%s", p->name,
-      strlen(p->name) > 4 ? "\t" : "\t\t");
+      strlen(p->name) > 8 ? "\t" : "\t\t");
   cprintf("%d\t%d\t%d\t%d\t",
       p->uid, p->gid,
       p->parent ? p->parent->pid : p->pid,  // check if parent null

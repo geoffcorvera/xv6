@@ -189,13 +189,16 @@ struct {
 void
 consoleintr(int (*getc)(void))
 {
-  int c, doprocdump = 0;
+  int c, doprocdump = 0, dolistprint = 0;
 
   acquire(&cons.lock);
   while((c = getc()) >= 0){
     switch(c){
     case C('P'):  // Process listing.
       doprocdump = 1;   // procdump() locks cons.lock indirectly; invoke later
+      break;
+    case C('R'):
+      dolistprint = 1;
       break;
     case C('U'):  // Kill line.
       while(input.e != input.w &&
@@ -226,6 +229,8 @@ consoleintr(int (*getc)(void))
   release(&cons.lock);
   if(doprocdump) {
     procdump();  // now call procdump() wo. cons.lock held
+  } else if(dolistprint) {
+    listprint();
   }
 }
 

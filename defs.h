@@ -126,6 +126,7 @@ int             ptablecopy(struct uproc *uprocs, int max);
 #endif
 #ifdef CS333_P3P4
 int             updatePriority(uint pid, uint priority);
+void            listprint(void);
 #endif
 
 // swtch.S
