@@ -527,7 +527,6 @@ scheduler(void)
     // check ready list looking for process to run.
     acquire(&ptable.lock);
 
-    // TODO make not broken scheduler
     while(findHighestProc(&p, &prio)) {
       assertPriority(p, prio);  // RUNNABLE state assert in stateTransfer
       
