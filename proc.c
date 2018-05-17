@@ -58,7 +58,7 @@ static int stateListRemove(struct proc** head, struct proc** tail, struct proc* 
 static int hasActiveChildren(void);
 static int hasChild(struct proc *head);
 static void assertState(struct proc *p, enum procstate state);
-static void stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState,
+static int stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState,
   struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p);
 static void assertPriority(struct proc *p, int priority);
 int updatePriority(uint pid, uint priority);
@@ -105,12 +105,12 @@ found:
   p->state = EMBRYO;
 #else
   p = ptable.pLists.free;
-  if(p == 0){       // no free processes available
+  if(p == 0 || stateTransfer(&ptable.pLists.free, &ptable.pLists.freeTail, UNUSED, 
+      &ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO, p) < 0)
+  {       // no free processes available
     release(&ptable.lock);
     return 0;
   }
-  stateTransfer(&ptable.pLists.free, &ptable.pLists.freeTail, UNUSED, 
-      &ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO, p);
 #endif
 
   p->pid = nextpid++;
@@ -702,6 +702,12 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   proc->chan = chan;
 #ifdef CS333_P3P4
+  proc->budget -= ticks - proc->cpu_ticks_in;
+  if(proc->budget <= 0) {
+    proc->priority++;
+    proc->budget = BUDGET;
+  }
+
   stateTransfer(&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING
       ,&ptable.pLists.sleep, &ptable.pLists.sleepTail, SLEEPING, proc);
 #else
@@ -1020,15 +1026,16 @@ assertState(struct proc *p, enum procstate state) {
     panic(states[state]);
 }
 
-static void
+static int
 stateTransfer(struct proc **fromHead, struct proc **fromTail, enum procstate oldState
     ,struct proc **toHead, struct proc **toTail, enum procstate newState, struct proc *p)
 {
   if(stateListRemove(fromHead, fromTail, p) < 0)
-    panic("stateTransfer > stateListRemove failed");
+    return -1;
   assertState(p, oldState);
   p->state = newState;
   stateListAdd(toHead, toTail, p);
+  return 1;
 }
 
 static void
