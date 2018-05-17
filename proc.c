@@ -644,7 +644,7 @@ yield(void)
 #ifdef CS333_P3P4
   proc->budget -= ticks - proc->cpu_ticks_in;
   // demote if used up budget
-  if(proc->budget <= 0) {
+  if(proc->budget <= 0 && proc->priority < MAXPRIO) {
     proc->priority++;
     proc->budget = BUDGET;
   }
@@ -703,7 +703,7 @@ sleep(void *chan, struct spinlock *lk)
   proc->chan = chan;
 #ifdef CS333_P3P4
   proc->budget -= ticks - proc->cpu_ticks_in;
-  if(proc->budget <= 0) {
+  if(proc->budget <= 0 && proc->budget < MAXPRIO) {
     proc->priority++;
     proc->budget = BUDGET;
   }
