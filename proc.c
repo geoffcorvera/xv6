@@ -64,9 +64,10 @@ static void assertPriority(struct proc *p, int priority);
 int updatePriority(uint pid, uint priority);
 static int findActiveProc(uint pid, struct proc **p);
 static int findInList(uint pid, struct proc *head,  struct proc **p);
+static int findHighestProc(struct proc **p, int *prio);
 static void promote(void);
 
-static void procdumpP2(struct proc *p, char *state);
+static void procdumpP3P4(struct proc *p, char *state);
 #elif defined(CS333_P2)
 static void procdumpP2(struct proc *p, char *state);
 int ptablecopy(struct uproc* uprocs, int max);
@@ -516,6 +517,7 @@ scheduler(void)
 {
   struct proc *p;
   int idle;  // for checking if processor is idle
+  int prio;  // for checking priority
 
   for(;;){
     // Enable interrupts on this processor.
@@ -525,20 +527,17 @@ scheduler(void)
     // check ready list looking for process to run.
     acquire(&ptable.lock);
 
-    // Loop over priority queues looking for highest priority process
-    for(int priority = 0; priority <= MAXPRIO; priority++){
-      p = ptable.pLists.ready[priority];
-      if(p == 0)
-        continue;
-      assertState(p, RUNNABLE);
-      assertPriority(p, priority);
+    // TODO make not broken scheduler
+    while(findHighestProc(&p, &prio)) {
+      assertPriority(p, prio);  // RUNNABLE state assert in stateTransfer
+      
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       idle = 0;  // not idle this timeslice
       proc = p;
       switchuvm(p);
-      stateTransfer(&ptable.pLists.ready[priority], &ptable.pLists.readyTail[priority], RUNNABLE
+      stateTransfer(&ptable.pLists.ready[prio], &ptable.pLists.readyTail[prio], RUNNABLE
           ,&ptable.pLists.running, &ptable.pLists.runningTail, RUNNING, p);
 #ifdef CS333_P2
       p->cpu_ticks_in = ticks;
@@ -554,7 +553,6 @@ scheduler(void)
       if(ticks >= ptable.promoteAtTime)
         promote();
     }
-
     release(&ptable.lock);
     // if idle, wait for next interrupt
     if (idle) {
@@ -564,10 +562,26 @@ scheduler(void)
   }
 }
 
+static int
+findHighestProc(struct proc **p, int *prio)
+{
+  struct proc *current;
+  
+  for(int i = 0; i <= MAXPRIO; i++) {
+    current = ptable.pLists.ready[i];
+    if(current) {
+      *p = current;
+      *prio = i;
+      return 1;
+    }
+  }
+  return 0;
+}
+
 // Periodic promotion resets budget to encourage low priority processes
 // to make some progress (except for currently running procs)
 void
-promote(void)
+promote(void) //TODO make queue to queue transfer efficient by changing pointers
 {
   int priority;
   struct proc *p, *next;
@@ -703,7 +717,7 @@ sleep(void *chan, struct spinlock *lk)
   proc->chan = chan;
 #ifdef CS333_P3P4
   proc->budget -= ticks - proc->cpu_ticks_in;
-  if(proc->budget <= 0 && proc->budget < MAXPRIO) {
+  if(proc->budget <= 0 && proc->priority < MAXPRIO) {
     proc->priority++;
     proc->budget = BUDGET;
   }
@@ -747,6 +761,9 @@ wakeup1(void *chan)
   p = ptable.pLists.sleep;
   while(p) {
     if(p->chan == chan) {
+      if(p->priority > MAXPRIO)
+        panic("wakeup1 priority > MAXPRIO");
+
       stateTransfer(&ptable.pLists.sleep, &ptable.pLists.sleepTail, SLEEPING
           ,&ptable.pLists.ready[p->priority], &ptable.pLists.readyTail[p->priority], RUNNABLE, p);
       break;
@@ -859,7 +876,9 @@ procdump(void)
   char *state;
   uint pc[10];
 
-#if defined(CS333_P2)
+#if defined(CS333_P3P4)
+#define HEADER "\nPID\tName\t\tUID\tGID\tPPID\tPrio\tElapsed CPU\tState\tSize\tPCs\n"
+#elif defined(CS333_P2)
 #define HEADER "\nPID\tName\tUID\tGID\tPPID\tElapsed CPU\tState\tSize\tPCs\n"
 #elif defined(CS333_P1)
 #define HEADER "\nElapsed\tPID\tState\tName\tPCs\n"
@@ -876,7 +895,9 @@ procdump(void)
     else
       state = "???";
 
-#if defined(CS333_P2)
+#if defined(CS333_P3P4)
+    procdumpP3P4(p, state);
+#elif defined(CS333_P2)
     procdumpP2(p, state);
 #elif defined(CS333_P1)
     procdumpP1(p, state);
@@ -1097,16 +1118,31 @@ findInList(uint pid, struct proc *head,  struct proc **p) {
   return -1;
 }
 
-#endif
+static void
+procdumpP3P4(struct proc *p, char *state) {
+  int elapsed = ticks - p->start_ticks;
 
-// Procdump() helper functions
-#if defined(CS333_P2)
+  cprintf("%d\t", p->pid);
+  cprintf("%s%s", p->name,
+      strlen(p->name) > 4 ? "\t" : "\t\t");
+  cprintf("%d\t%d\t%d\t%d\t",
+      p->uid, p->gid,
+      p->parent ? p->parent->pid : p->pid,  // check if parent null
+      p->priority);
+  cprintf("%d.%d\t", elapsed/1000, elapsed%1000);
+  cprintf("%d.%d\t%s\t%d\t",
+      p->cpu_ticks_total/1000, p->cpu_ticks_total%1000,
+      state, p->sz);
+}
+#elif defined(CS333_P2)
 static void
 procdumpP2(struct proc *p, char *state) {
   int elapsed = ticks - p->start_ticks;
 
-  cprintf("%d\t%s\t%d\t%d\t%d\t",
-      p->pid, p->name,
+  cprintf("%d\t", p->pid);
+  cprintf("%s%s", p->name,
+      strlen(p->name) > 4 ? "\t" : "\t\t");
+  cprintf("%d\t%d\t%d\t",
       p->uid, p->gid,
       p->parent ? p->parent->pid : p->pid);       // check if parent null
   cprintf("%d.%d ", elapsed/1000, elapsed%1000);
@@ -1114,7 +1150,10 @@ procdumpP2(struct proc *p, char *state) {
       p->cpu_ticks_total/1000, p->cpu_ticks_total%1000,
       state, p->sz);
 }
+#endif
 
+// Procdump() helper functions
+#if defined(CS333_P2)
 // Copies relevant process info from ptable into uprocs array.
 // Returns the number of processes copied on success, and -1
 // on failure.
@@ -1133,6 +1172,9 @@ ptablecopy(struct uproc *uprocs, int max) {
       uprocs[n].uid = p->uid;
       uprocs[n].gid = p->gid;
       uprocs[n].ppid = p->parent ? p->parent->pid : p->pid;
+#ifdef CS333_P3P4
+      uprocs[n].prio = p->priority;
+#endif
       uprocs[n].elapsed_ticks = ticks - p->start_ticks;
       uprocs[n].CPU_total_ticks = p->cpu_ticks_total;
       uprocs[n].size = p->sz;
