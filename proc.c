@@ -15,7 +15,6 @@
 #include "spinlock.h"
 #include "uproc.h"
 
-//TODO: refactor ready list manipulations
 #ifdef CS333_P3P4
 struct StateLists {
   struct proc* ready[MAXPRIO+1];
@@ -580,7 +579,7 @@ findHighestProc(struct proc **p, int *prio)
 
 // Periodic promotion resets budget to encourage low priority processes
 // to make some progress (except for currently running procs)
-void
+static void
 promote(void) //TODO make queue to queue transfer efficient by changing pointers
 {
   int priority;
@@ -606,7 +605,7 @@ promote(void) //TODO make queue to queue transfer efficient by changing pointers
   p = ptable.pLists.sleep;
   while(p) {
     if(p->priority > 0) {
-      p->priority -= 1;
+      p->priority--;
       p->budget = BUDGET;
     }
     p = p->next;
@@ -615,9 +614,9 @@ promote(void) //TODO make queue to queue transfer efficient by changing pointers
   // running processes don't get their budget reset
   p = ptable.pLists.running;
   while(p) {
-    if(p->priority > 0) {
-      p->priority -= 1;
-    }
+    if(p->priority > 0)
+      p->priority--;
+
     p = p->next;
   }
 
