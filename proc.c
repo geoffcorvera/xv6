@@ -1119,7 +1119,7 @@ findInList(uint pid, struct proc *head,  struct proc **p) {
 }
 
 void
-listprint() {
+readydump() {
   struct proc *p;
   
   cprintf("Ready List Processes:\n");
