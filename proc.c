@@ -196,8 +196,9 @@ userinit(void)
 #ifdef CS333_P3P4
   p->next = 0;       // set next to null for first process
   acquire(&ptable.lock);
+  assertPriority(p, 0);
   stateTransfer(&ptable.pLists.embryo, &ptable.pLists.embryoTail, EMBRYO,
-    &ptable.pLists.ready[p->priority], &ptable.pLists.readyTail[p->priority], RUNNABLE, p);
+    &ptable.pLists.ready[0], &ptable.pLists.readyTail[0], RUNNABLE, p);
   release(&ptable.lock);
 #else
   p->state = RUNNABLE;
